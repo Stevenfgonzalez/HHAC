@@ -38,3 +38,4 @@ loguru==0.7.2
 
 # API documentation
 fastapi-openapi==0.0.1 
+streamlit
