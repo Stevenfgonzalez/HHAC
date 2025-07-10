@@ -2,45 +2,25 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# ========== Visualizer ==========
+# ======== Visualization Logic ========
 class WellnessVisualizer:
-    def count_domain_entries(self, df):
+    def count_domains(self, df):
         domain_mapping = {
-            'Mind': ['emotion', 'clarity', 'thoughts', 'intrusive_thoughts'],
-            'Body': ['pain_level', 'pain_location', 'mobility'],
-            'Fuel': ['meals', 'hydration', 'digestion', 'supplements'],
-            'Rest': ['sleep_quality', 'sleep_routine', 'hygiene'],
-            'Belong': ['connection', 'support', 'social_moments']
+            'Mind': 'Mind',
+            'Body': 'Body',
+            'Fuel': 'Fuel',
+            'Rest': 'Rest',
+            'Belong': 'Belong'
         }
-        domain_counts = {}
-        for domain, fields in domain_mapping.items():
-            count = sum(1 for field in fields if field in df.columns)
-            if count > 0:
-                domain_counts[domain] = count
+
+        domain_counts = {k: 0 for k in domain_mapping.values()}
+        for domain in df['Domain']:
+            if domain in domain_counts:
+                domain_counts[domain] += 1
+
         return domain_counts
 
-    def create_dashboard(self):
-        st.subheader("📊 HHAC Insights")
+    def create_dashboard(self, df):
+        st.subheader("📊 HHAC Journal Insights")
         try:
-            df = pd.read_csv("journal_log.csv")
-            st.write("📋 Recent Entries", df.tail())
-            domain_counts = self.count_domain_entries(df)
-            st.write("📈 Entry Count by Domain", domain_counts)
-        except Exception as e:
-            st.error(f"Error loading dashboard: {e}")
-
-# ========== Streamlit App ==========
-st.set_page_config(page_title="Healing Hand – Daily Log")
-
-tab1, tab2 = st.tabs(["📓 Journal Entry", "📊 Insights"])
-
-with tab : if __name__ == "__main__":
-    st.set_page_config(page_title="HHAC Wellness Journal")
-    tab1, tab2 = st.tabs(["📝 Journal Entry", "📊 Insights"])
-
-    with tab1:
-        st.write("Journal input form goes here.")
-
-    with tab2:
-        add_visualization_tab()
-
+            st.write("Logged
