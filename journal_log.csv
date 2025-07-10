@@ -1,0 +1,369 @@
+import streamlit as st
+import pandas as pd
+import plotly.graph_objects as go
+import plotly.express as px
+from datetime import datetime, timedelta
+import numpy as np
+from plotly.subplots import make_subplots
+
+class WellnessVisualizer:
+    """Visualization module for HHAC Wellness Journal data"""
+    
+    def __init__(self, csv_path='journal_log.csv'):
+        self.csv_path = csv_path
+        self.df = None
+        self.load_data()
+    
+    def load_data(self):
+        """Load and preprocess the journal data"""
+        try:
+            self.df = pd.read_csv(self.csv_path)
+            self.df['timestamp'] = pd.to_datetime(self.df['timestamp'])
+            self.df = self.df.sort_values('timestamp')
+        except Exception as e:
+            st.error(f"Error loading data: {e}")
+            self.df = pd.DataFrame()
+    
+    def create_dashboard(self):
+        """Main dashboard creation method"""
+        if self.df.empty:
+            st.warning("No data available. Start logging entries in the journal!")
+            return
+        
+        st.title("📊 Wellness Insights Dashboard")
+        
+        # Date range selector
+        col1, col2 = st.columns(2)
+        with col1:
+            start_date = st.date_input(
+                "Start Date", 
+                value=self.df['timestamp'].min().date(),
+                max_value=datetime.now().date()
+            )
+        with col2:
+            end_date = st.date_input(
+                "End Date", 
+                value=self.df['timestamp'].max().date(),
+                max_value=datetime.now().date()
+            )
+        
+        # Filter data by date range
+        mask = (self.df['timestamp'].dt.date >= start_date) & (self.df['timestamp'].dt.date <= end_date)
+        filtered_df = self.df.loc[mask]
+        
+        if filtered_df.empty:
+            st.warning("No data in selected date range.")
+            return
+        
+        # Create tabs for different views
+        tab1, tab2, tab3, tab4 = st.tabs(["🏠 Overview", "📈 Trends", "🔄 Correlations", "🚨 Alerts"])
+        
+        with tab1:
+            self.create_overview(filtered_df)
+        
+        with tab2:
+            self.create_trends(filtered_df)
+        
+        with tab3:
+            self.create_correlations(filtered_df)
+        
+        with tab4:
+            self.create_alerts(filtered_df)
+    
+    def create_overview(self, df):
+        """Create overview visualizations"""
+        st.header("Domain Overview")
+        
+        # Summary metrics
+        col1, col2, col3, col4, col5 = st.columns(5)
+        
+        # Calculate domain averages (assuming numeric fields exist)
+        with col1:
+            if 'clarity' in df.columns:
+                avg_clarity = df['clarity'].mean()
+                st.metric("🧠 Avg Clarity", f"{avg_clarity:.1f}/10")
+        
+        with col2:
+            if 'pain_level' in df.columns:
+                avg_pain = df['pain_level'].mean()
+                st.metric("💪 Avg Pain", f"{avg_pain:.1f}/10")
+        
+        with col3:
+            if 'hydration' in df.columns:
+                avg_hydration = df['hydration'].mean()
+                st.metric("💧 Avg Hydration", f"{avg_hydration:.0f} oz")
+        
+        with col4:
+            if 'sleep_quality' in df.columns:
+                avg_sleep = df['sleep_quality'].mean()
+                st.metric("😴 Avg Sleep Quality", f"{avg_sleep:.1f}/10")
+        
+        with col5:
+            if 'connection' in df.columns:
+                avg_connection = df['connection'].mean()
+                st.metric("🤝 Avg Connection", f"{avg_connection:.1f}/10")
+        
+        # Domain distribution chart
+        st.subheader("Entry Distribution by Domain")
+        domain_counts = self.count_domain_entries(df)
+        if domain_counts:
+            fig = px.pie(
+                values=list(domain_counts.values()),
+                names=list(domain_counts.keys()),
+                title="Logging Frequency by Domain",
+                color_discrete_map={
+                    'Mind': '#FF6B6B',
+                    'Body': '#4ECDC4',
+                    'Fuel': '#45B7D1',
+                    'Rest': '#96CEB4',
+                    'Belong': '#FECA57'
+                }
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def create_trends(self, df):
+        """Create trend visualizations"""
+        st.header("Trend Analysis")
+        
+        # Select metrics to plot
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if 'timestamp' in numeric_cols:
+            numeric_cols.remove('timestamp')
+        
+        selected_metrics = st.multiselect(
+            "Select metrics to visualize",
+            numeric_cols,
+            default=numeric_cols[:3] if len(numeric_cols) >= 3 else numeric_cols
+        )
+        
+        if selected_metrics:
+            # Create time series plot
+            fig = make_subplots(
+                rows=len(selected_metrics),
+                cols=1,
+                subplot_titles=selected_metrics,
+                vertical_spacing=0.1
+            )
+            
+            for i, metric in enumerate(selected_metrics, 1):
+                # Add raw data
+                fig.add_trace(
+                    go.Scatter(
+                        x=df['timestamp'],
+                        y=df[metric],
+                        mode='lines+markers',
+                        name=metric,
+                        line=dict(width=2),
+                        marker=dict(size=6)
+                    ),
+                    row=i, col=1
+                )
+                
+                # Add 7-day moving average
+                if len(df) >= 7:
+                    ma7 = df.set_index('timestamp')[metric].rolling('7D').mean()
+                    fig.add_trace(
+                        go.Scatter(
+                            x=ma7.index,
+                            y=ma7.values,
+                            mode='lines',
+                            name=f'{metric} (7-day avg)',
+                            line=dict(width=3, dash='dash')
+                        ),
+                        row=i, col=1
+                    )
+            
+            fig.update_layout(
+                height=300 * len(selected_metrics),
+                showlegend=True,
+                title_text="Metrics Over Time"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # Daily patterns
+        if st.checkbox("Show daily patterns"):
+            self.create_daily_patterns(df)
+    
+    def create_correlations(self, df):
+        """Create correlation visualizations"""
+        st.header("Cross-Domain Correlations")
+        
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        if len(numeric_cols) < 2:
+            st.warning("Not enough numeric data for correlation analysis")
+            return
+        
+        # Correlation heatmap
+        corr_matrix = df[numeric_cols].corr()
+        
+        fig = px.imshow(
+            corr_matrix,
+            labels=dict(color="Correlation"),
+            x=numeric_cols,
+            y=numeric_cols,
+            color_continuous_scale="RdBu",
+            aspect="auto",
+            title="Metric Correlations"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Scatter plot for selected metrics
+        st.subheader("Explore Relationships")
+        col1, col2 = st.columns(2)
+        with col1:
+            x_metric = st.selectbox("X-axis metric", numeric_cols)
+        with col2:
+            y_metric = st.selectbox("Y-axis metric", numeric_cols, index=1 if len(numeric_cols) > 1 else 0)
+        
+        if x_metric and y_metric:
+            fig = px.scatter(
+                df,
+                x=x_metric,
+                y=y_metric,
+                trendline="ols",
+                title=f"{x_metric} vs {y_metric}",
+                hover_data=['timestamp']
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def create_alerts(self, df):
+        """Create alert analysis"""
+        st.header("Alert Analysis")
+        
+        alerts = []
+        
+        # Check for consecutive days of high pain
+        if 'pain_level' in df.columns:
+            high_pain_days = self.check_consecutive_threshold(df, 'pain_level', 7, 3)
+            if high_pain_days:
+                alerts.append(("🚨 High Pain Alert", f"Pain level ≥7 for {high_pain_days} consecutive days"))
+        
+        # Check for poor sleep patterns
+        if 'sleep_quality' in df.columns:
+            poor_sleep_days = self.check_consecutive_threshold(df, 'sleep_quality', 5, 3, below=True)
+            if poor_sleep_days:
+                alerts.append(("😴 Poor Sleep Alert", f"Sleep quality ≤5 for {poor_sleep_days} consecutive days"))
+        
+        # Check for low hydration
+        if 'hydration' in df.columns:
+            avg_hydration = df['hydration'].tail(7).mean()
+            if avg_hydration < 64:  # Less than 64 oz
+                alerts.append(("💧 Low Hydration Alert", f"Average hydration {avg_hydration:.0f} oz in last 7 days"))
+        
+        # Display alerts
+        if alerts:
+            for alert_type, alert_msg in alerts:
+                st.warning(f"{alert_type}: {alert_msg}")
+        else:
+            st.success("✅ No alerts - all systems looking good!")
+        
+        # Trend-based alerts
+        st.subheader("Trend Alerts")
+        self.create_trend_alerts(df)
+    
+    def create_daily_patterns(self, df):
+        """Analyze patterns by time of day"""
+        df['hour'] = df['timestamp'].dt.hour
+        
+        # Group by hour and calculate averages
+        hourly_stats = df.groupby('hour').mean()
+        
+        if not hourly_stats.empty:
+            metrics = hourly_stats.columns[:3]  # Show first 3 metrics
+            
+            fig = go.Figure()
+            for metric in metrics:
+                if metric in hourly_stats.columns:
+                    fig.add_trace(go.Scatter(
+                        x=hourly_stats.index,
+                        y=hourly_stats[metric],
+                        mode='lines+markers',
+                        name=metric
+                    ))
+            
+            fig.update_layout(
+                title="Average Metrics by Hour of Day",
+                xaxis_title="Hour",
+                yaxis_title="Average Value",
+                xaxis=dict(tickmode='linear', tick0=0, dtick=2)
+            )
+            st.plotly_chart(fig, use_container_width=True)
+    
+    def check_consecutive_threshold(self, df, column, threshold, days, below=False):
+        """Check for consecutive days above/below threshold"""
+        if column not in df.columns:
+            return 0
+        
+        df_daily = df.groupby(df['timestamp'].dt.date)[column].mean()
+        
+        if below:
+            condition = df_daily <= threshold
+        else:
+            condition = df_daily >= threshold
+        
+        consecutive = 0
+        max_consecutive = 0
+        
+        for val in condition:
+            if val:
+                consecutive += 1
+                max_consecutive = max(max_consecutive, consecutive)
+            else:
+                consecutive = 0
+        
+        return max_consecutive if max_consecutive >= days else 0
+    
+    def create_trend_alerts(self, df):
+        """Detect concerning trends"""
+        numeric_cols = df.select_dtypes(include=[np.number]).columns.tolist()
+        
+        for col in numeric_cols[:5]:  # Check first 5 numeric columns
+            if len(df) >= 7:
+                recent = df[col].tail(7).mean()
+                previous = df[col].tail(14).head(7).mean()
+                
+                if previous > 0:  # Avoid division by zero
+                    change_pct = ((recent - previous) / previous) * 100
+                    
+                    if abs(change_pct) > 20:  # 20% change threshold
+                        direction = "increased" if change_pct > 0 else "decreased"
+                        st.info(f"📊 {col} has {direction} by {abs(change_pct):.0f}% in the last week")
+    
+    def count_domain_entries(self, df):
+        """Count entries by domain based on column names"""
+        domain_mapping = {
+            'Mind': ['emotion', 'clarity', 'thoughts', 'intrusive_loops', 'regulation_strategies'],
+            'Body': ['pain_level', 'pain_location', 'mobility', 'recovery_tools'],
+            'Fuel': ['meals', 'hydration', 'digestion', 'supplements'],
+            'Rest': ['sleep_quality', 'sleep_routine', 'hygiene'],
+            'Belong': ['connection', 'support', 'social_moments']
+        }
+        
+        domain_counts = {}
+        for domain, fields in domain_mapping.items():
+            count = sum(1 for field in fields if field in df.columns and df[field].notna().any())
+            if count > 0:
+                domain_counts[domain] = count
+        
+        return domain_counts
+
+
+# Streamlit integration function
+def add_visualization_tab():
+    """Function to add visualization tab to existing Streamlit app"""
+    visualizer = WellnessVisualizer()
+    visualizer.create_dashboard()
+
+
+# Example usage in your main app:
+# if __name__ == "__main__":
+#     st.set_page_config(page_title="HHAC Wellness Journal", layout="wide")
+#     
+#     tab1, tab2 = st.tabs(["📝 Journal Entry", "📊 Insights"])
+#     
+#     with tab1:
+#         # Your existing journal entry code
+#         pass
+#     
+#     with tab2:
+#         add_visualization_tab()
