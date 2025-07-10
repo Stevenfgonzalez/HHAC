@@ -1,38 +1,56 @@
 import streamlit as st
-import plotly.express as px
 import pandas as pd
 
-st.title("HHAC Journal: IERS, SECIT, CEDARS")
-st.write("Track restoration, contributions, and energy metrics.")
+# Title of the app
+st.title("Journal App")
 
-# CEDARS Section
-st.header("CEDARS Energy Tracker")
-solar_output = st.slider("Solar Output (kWh)", 0, 100, 50)
-contribution = st.text_area("Energy Contribution (e.g., solar maintenance)")
-if contribution:
-    st.success("Contribution logged: 10 energy credits earned!")
+# Initialize session state for data storage (in-memory, persists during session)
+if 'entries' not in st.session_state:
+    st.session_state.entries = pd.DataFrame(columns=['Domain', 'Date', 'Field1', 'Field2', 'Notes'])
 
-# IERS Section
-st.header("IERS Restoration Tracker")
-soil_health = st.slider("Soil Health (1-10)", 1, 10, 5)
-water_retention = st.slider("Water Retention (1-10)", 1, 10, 5)
+# Function to add an entry
+def add_entry(domain, date, field1, field2, notes):
+    new_entry = pd.DataFrame({
+        'Domain': [domain],
+        'Date': [date],
+        'Field1': [field1],
+        'Field2': [field2],
+        'Notes': [notes]
+    })
+    st.session_state.entries = pd.concat([st.session_state.entries, new_entry], ignore_index=True)
 
-# SECIT Section
-st.header("SECIT Contribution Tracker")
-social_contribution = st.text_area("Social Contribution (e.g., elder care)")
+# Sidebar for domain selection
+domain = st.sidebar.selectbox("Select Domain", ["Fire Station", "Simulation", "Personal"])
 
-# Save Data
-if "journal_data" not in st.session_state:
-    st.session_state.journal_data = []
-st.session_state.journal_data.append({
-    "Solar": solar_output,
-    "Soil": soil_health,
-    "Water": water_retention,
-    "Social": social_contribution
-})
-st.write("Data saved!")
+# Input form based on domain
+with st.form(key="entry_form"):
+    date = st.date_input("Date")
+    if domain == "Fire Station":
+        power_usage = st.number_input("Power Usage (kWh)", min_value=0.0)
+        notes = st.text_input("Notes")
+        submit = st.form_submit_button("Submit")
+        if submit:
+            add_entry(domain, date, power_usage, None, notes)
+    elif domain == "Simulation":
+        outage_duration = st.number_input("Outage Duration (hours)", min_value=0.0)
+        result = st.text_input("Result")
+        submit = st.form_submit_button("Submit")
+        if submit:
+            add_entry(domain, date, outage_duration, result, None)
+    elif domain == "Personal":
+        task = st.text_input("Task")
+        notes = st.text_input("Notes")
+        submit = st.form_submit_button("Submit")
+        if submit:
+            add_entry(domain, date, task, None, notes)
 
-# Visualization
-df = pd.DataFrame(st.session_state.journal_data)
-fig = px.line(df, x=df.index, y=["Solar", "Soil", "Water"], title="Cross-Patent Metrics")
-st.plotly_chart(fig)
+# Display all entries in a table
+st.subheader("Logged Entries")
+if not st.session_state.entries.empty:
+    st.dataframe(st.session_state.entries)
+else:
+    st.info("No entries yet. Add one above!")
+
+# Clear data button (optional)
+if st.button("Clear All Entries"):
+    st.session_state.entries = pd.DataFrame(columns=['Domain', 'Date', 'Field1', 'Field2', 'Notes'])
