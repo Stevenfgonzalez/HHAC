@@ -34,4 +34,4 @@ st.set_page_config(page_title="Healing Hand – Daily Log")
 
 tab1, tab2 = st.tabs(["📓 Journal Entry", "📊 Insights"])
 
-with tab:
+with tab :
