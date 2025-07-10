@@ -34,4 +34,13 @@ st.set_page_config(page_title="Healing Hand – Daily Log")
 
 tab1, tab2 = st.tabs(["📓 Journal Entry", "📊 Insights"])
 
-with tab :
+with tab : if __name__ == "__main__":
+    st.set_page_config(page_title="HHAC Wellness Journal")
+    tab1, tab2 = st.tabs(["📝 Journal Entry", "📊 Insights"])
+
+    with tab1:
+        st.write("Journal input form goes here.")
+
+    with tab2:
+        add_visualization_tab()
+
