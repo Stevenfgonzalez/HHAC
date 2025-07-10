@@ -1,39 +1,98 @@
 import streamlit as st
-import pandas as pd
 from datetime import datetime
+import pandas as pd
 import os
 
-# Set page config
-st.set_page_config(page_title="HHAC Journal", page_icon="📝", layout="centered")
+st.set_page_config(page_title="HHAC Journal", layout="centered")
+st.title("📝 Healing Hand AI Council – Daily Log")
 
-# Load or create log file
-LOG_FILE = "journal_log.csv"
-if os.path.exists(LOG_FILE):
-    journal_df = pd.read_csv(LOG_FILE)
-else:
-    journal_df = pd.DataFrame(columns=["Timestamp", "Domain", "Rating", "Notes"])
+# === Timestamp ===
+timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-# App title
-st.title("HHAC Journal Logger")
+# === MIND ===
+st.subheader("🧠 Mind")
+emotion = st.selectbox("Current emotion:", ["Happy", "Angry", "Anxious", "Sad", "Overwhelmed", "Numb", "Grateful", "Motivated", "Other"])
+clarity = st.slider("Mental clarity (1 = foggy, 10 = clear)", 1, 10, 5)
+thoughts = st.text_area("Any thoughts or emotional triggers?")
+intrusive = st.text_area("Intrusive thoughts or spirals?")
+regulation_used = st.multiselect("Emotional regulation used:", ["Breathing", "Movement", "Talking", "Avoidance", "None"])
+smiled = st.checkbox("Did you smile today?")
 
-# Domain options
-domain_options = ["Mind", "Body", "Fuel", "Rest", "Belong"]
-domain = st.selectbox("Which domain are you logging?", domain_options)
+# === BODY ===
+st.subheader("💪 Body")
+pain = st.slider("Pain level (1 = none, 10 = worst)", 1, 10, 5)
+pain_location = st.selectbox("Where is the pain?", ["Back", "Neck", "Hips", "Shoulder", "None", "Other"])
+pain_description = st.text_area("Describe the discomfort:")
+mobility = st.slider("Mobility today (1 = stiff, 10 = fluid)", 1, 10, 5)
+body_care = st.multiselect("What did you use to support your body?", ["Heat", "Ice", "Movement", "Massage", "Medication", "None"])
 
-# Rating scale
-rating = st.slider("How are you doing in this domain (1 = struggling, 10 = thriving)?", 1, 10, 5)
+# === FUEL ===
+st.subheader("🥗 Fuel")
+meals = st.text_area("What did you eat today?")
+protein_first = st.selectbox("Did you eat protein first?", ["Yes", "No"])
+hydration = st.slider("Hydration level (1 = dry, 10 = optimal)", 1, 10, 5)
+consumed = st.multiselect("Did you consume any of these?", ["Sugar", "Dairy", "Gluten", "Processed Foods"])
+supplements = st.text_area("Supplements taken:")
+digest = st.selectbox("Did you feel satisfied or bloated after meals?", ["Satisfied", "Bloated", "Neutral"])
 
-# Notes
-notes = st.text_area("Any notes or context you want to add?")
+# === REST ===
+st.subheader("🛌 Rest")
+sleep_quality = st.slider("Sleep quality last night (1 = poor, 10 = great)", 1, 10, 5)
+sleep_hours = st.text_input("Hours of sleep:")
+night_routine = st.multiselect("Night routine followed:", ["Breathwork", "Screen limit", "Meditation", "Cold shower", "Journaling", "None"])
+rest_disruptions = st.text_area("What disrupted your rest, if anything?")
+woke_restored = st.selectbox("Did you wake up rested?", ["Yes", "No"])
+hygiene = st.multiselect("Personal hygiene completed:", ["Shower", "Brushed Teeth", "Nails", "Shaved", "None"])
 
-# Submit entry
-if st.button("Log Entry"):
-    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    new_entry = pd.DataFrame([[timestamp, domain, rating, notes]], columns=journal_df.columns)
-    journal_df = pd.concat([journal_df, new_entry], ignore_index=True)
-    journal_df.to_csv(LOG_FILE, index=False)
-    st.success("Entry logged!")
+# === BELONG ===
+st.subheader("🫂 Belong")
+connection = st.selectbox("How connected did you feel today?", ["Isolated", "Neutral", "Connected", "Supported"])
+interactions = st.text_area("Meaningful interactions (Who, how?)")
+felt_seen = st.selectbox("Did you feel seen or heard?", ["Yes", "No"])
+gave_support = st.selectbox("Did you offer support to someone else?", ["Yes", "No"])
+relationship_notes = st.text_area("Any relationship stress or wins today?")
+laughter = st.multiselect("Laughter moments?", ["Heard a joke", "Made someone laugh", "Smiled with someone", "None"])
 
-# Optional: View recent entries
-if st.checkbox("Show recent entries"):
-    st.dataframe(journal_df.tail(10))
+# === Save Entry ===
+# === Save Entry ===
+if st.button("💾 Save Log Entry"):
+    entry = {
+        "Timestamp": timestamp,
+        "Emotion": emotion,
+        "Mental Clarity": clarity,
+        "Thoughts": thoughts,
+        "Intrusive Thoughts": intrusive,
+        "Regulation Used": ", ".join(regulation_used),
+        "Smiled": smiled,
+        "Pain Level": pain,
+        "Pain Location": pain_location,
+        "Pain Description": pain_description,
+        "Mobility": mobility,
+        "Body Care": ", ".join(body_care),
+        "Meals": meals,
+        "Protein First": protein_first,
+        "Hydration Level": hydration,
+        "Consumed": ", ".join(consumed),
+        "Supplements": supplements,
+        "Digestion Feel": digest,
+        "Sleep Quality": sleep_quality,
+        "Sleep Hours": sleep_hours,
+        "Night Routine": ", ".join(night_routine),
+        "Rest Disruptions": rest_disruptions,
+        "Woke Rested": woke_restored,
+        "Hygiene": ", ".join(hygiene),
+        "Connection Level": connection,
+        "Interactions": interactions,
+        "Felt Seen": felt_seen,
+        "Gave Support": gave_support,
+        "Relationship Notes": relationship_notes,
+        "Laughter": ", ".join(laughter)
+    }
+
+    df = pd.DataFrame([entry])
+    if not os.path.exists("journal_log.csv"):
+        df.to_csv("journal_log.csv", index=False)
+    else:
+        df.to_csv("journal_log.csv", mode='a', header=False, index=False)
+
+    st.success("✅ Journal entry saved successfully!")
