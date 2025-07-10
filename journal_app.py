@@ -54,6 +54,7 @@ relationship_notes = st.text_area("Any relationship stress or wins today?")
 laughter = st.multiselect("Laughter moments?", ["Heard a joke", "Made someone laugh", "Smiled with someone", "None"])
 
 # === Save Entry ===
+# === Save Entry ===
 if st.button("💾 Save Log Entry"):
     entry = {
         "Timestamp": timestamp,
@@ -76,4 +77,23 @@ if st.button("💾 Save Log Entry"):
         "Digestion Feel": digest,
         "Sleep Quality": sleep_quality,
         "Sleep Hours": sleep_hours,
-        "Night Routine": ", ".j
+        "Night Routine": ", ".join(night_routine),
+        "Rest Disruptions": rest_disruptions,
+        "Woke Rested": woke_restored,
+        "Hygiene": ", ".join(hygiene),
+        "Connection Level": connection,
+        "Interactions": interactions,
+        "Felt Seen": felt_seen,
+        "Gave Support": gave_support,
+        "Relationship Notes": relationship_notes,
+        "Laughter": ", ".join(laughter)
+    }
+
+    df = pd.DataFrame([entry])
+    if not os.path.exists("journal_log.csv"):
+        df.to_csv("journal_log.csv", index=False)
+    else:
+        df.to_csv("journal_log.csv", mode='a', header=False, index=False)
+
+    st.success("✅ Journal entry saved successfully!")
+
