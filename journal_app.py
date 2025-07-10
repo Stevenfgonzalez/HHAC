@@ -36,4 +36,5 @@ class WellnessVisualizer:
                 st.bar_chart(df["emotion"].value_counts())
 
         except Exception as e:
-            st.error(f"Erro
+            st.error(f"Error loading data: {e}")
+
