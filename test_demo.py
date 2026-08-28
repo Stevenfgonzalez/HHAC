@@ -93,7 +93,7 @@ def demo_hhac_concept():
     
     print("\n" + "="*70)
     print("🎉 HHAC System Architecture Complete!")
-    print("Patent Pending - Thee Phoenix Project LLC")
+    print("Patent Pending - Safety For Generations LLC")
     print("Building Human-Centered AI That Listens")
 
 

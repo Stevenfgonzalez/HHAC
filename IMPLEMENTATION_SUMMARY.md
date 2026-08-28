@@ -175,5 +175,5 @@ Explicit commitment to user data ownership and privacy, with no monetization of 
 
 The HHAC system represents a fundamental shift from optimization engines to wisdom systems that honor human complexity. The foundation is now in place for a truly human-centered AI that listens, considers all aspects of wellbeing, and preserves human agency while providing genuinely helpful guidance.
 
-**Patent Pending - Thee Phoenix Project LLC**  
+**Patent Pending - Safety For Generations LLC**  
 **Building Human-Centered AI That Listens** 
