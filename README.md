@@ -154,7 +154,7 @@ Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduc
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Patent Status
-HHAC Patent Pending - Thee Phoenix Project LLC
+HHAC Patent Pending - Safety For Generations LLC
 
 ---
 
